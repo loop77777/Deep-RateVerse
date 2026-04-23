@@ -6,19 +6,31 @@ export default function Signup() {
 
     const handleSignup = async () => {
         await api.post("/signup", form);
-        alert("Signup success");
+        alert("Signup successful");
     };
 
     return (
-        <div>
-            <h2>Signup</h2>
+        <div className="flex justify-center mt-10">
 
-            <input placeholder="Name" onChange={e => setForm({ ...form, name: e.target.value })} />
-            <input placeholder="Email" onChange={e => setForm({ ...form, email: e.target.value })} />
-            <input placeholder="Address" onChange={e => setForm({ ...form, address: e.target.value })} />
-            <input type="password" placeholder="Password" onChange={e => setForm({ ...form, password: e.target.value })} />
+            <div className="bg-white p-6 rounded shadow w-96">
+                <h2 className="text-xl mb-4">Signup</h2>
 
-            <button onClick={handleSignup}>Signup</button>
+                {["name", "email", "address", "password"].map(field => (
+                    <input
+                        key={field}
+                        type={field === "password" ? "password" : "text"}
+                        placeholder={field}
+                        className="border p-2 w-full mb-2"
+                        onChange={e => setForm({ ...form, [field]: e.target.value })}
+                    />
+                ))}
+
+                <button className="bg-black text-white w-full p-2"
+                    onClick={handleSignup}>
+                    Signup
+                </button>
+            </div>
+
         </div>
     );
 }
