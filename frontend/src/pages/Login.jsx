@@ -1,74 +1,106 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../utils/api";
 
+/**
+ * Login Page Component
+ * Authenticates user and stores token + user data
+ */
 export default function Login() {
-    const [form, setForm] = useState({ email: "", password: "" });
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
 
-    const handleLogin = async () => {
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError("");
+
         try {
-            setLoading(true);
+            // Call API
+            const response = await api.post("/auth/login", { email, password });
 
-            const res = await api.post("/login", form);
+            console.log("Login response:", response);
 
-            console.log("LOGIN RESPONSE:", res.data); // DEBUG
+            // Check if login was successful
+            if (response.success && response.token) {
+                // Store token and user data
+                localStorage.setItem("token", response.token);
+                localStorage.setItem("user", JSON.stringify(response.user));
 
-            localStorage.setItem("token", res.data.token);
+                console.log("✅ Login successful, user role:", response.user.role);
 
-            // decode role
-            const payload = JSON.parse(atob(res.data.token.split(".")[1]));
-
-            // redirect based on role
-            if (payload.role === "admin") {
-                window.location.href = "/admin";
-            } else if (payload.role === "owner") {
-                window.location.href = "/owner";
+                // Navigate based on role
+                if (response.user.role === "admin") {
+                    navigate("/admin");
+                } else if (response.user.role === "owner") {
+                    navigate("/owner");
+                } else {
+                    navigate("/stores");
+                }
             } else {
-                window.location.href = "/stores";
+                setError(response.msg || "Login failed");
             }
-
         } catch (err) {
-            console.error(err);
-            alert("Login failed");
+            console.error("Login error:", err);
+            setError(err.msg || "Invalid email or password");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+            <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                <h1 className="text-3xl font-bold mb-6 text-center">RateVerse</h1>
 
-            <div className="bg-white p-6 rounded shadow w-80">
-                <h2 className="text-xl mb-4 text-center">RateVerse Login</h2>
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        {error}
+                    </div>
+                )}
 
-                <input
-                    className="border p-2 w-full mb-2"
-                    placeholder="Email"
-                    onChange={e => setForm({ ...form, email: e.target.value })}
-                />
+                <form onSubmit={handleLogin}>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-2">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                            required
+                        />
+                    </div>
 
-                <input
-                    className="border p-2 w-full mb-4"
-                    type="password"
-                    placeholder="Password"
-                    onChange={e => setForm({ ...form, password: e.target.value })}
-                />
+                    <div className="mb-6">
+                        <label className="block text-gray-700 font-bold mb-2">Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                            required
+                        />
+                    </div>
 
-                <button
-                    className="bg-black text-white w-full p-2 mb-2"
-                    onClick={handleLogin}
-                    disabled={loading}
-                >
-                    {loading ? "Logging in..." : "Login"}
-                </button>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
+                    >
+                        {loading ? "Logging in..." : "Login"}
+                    </button>
+                </form>
 
-                {/* Signup link */}
-                <p className="text-sm text-center">
-                    Don't have an account? <Link to="/signup" className="text-blue-500">Signup</Link>
+                <p className="text-center mt-4">
+                    Don't have account?{" "}
+                    <Link to="/signup" className="text-blue-600 hover:underline">
+                        Sign up
+                    </Link>
                 </p>
             </div>
-
         </div>
     );
 }

@@ -1,19 +1,37 @@
+// Import jsonwebtoken library for verifying tokens
 const jwt = require("jsonwebtoken");
 
-// Middleware to verify JWT token
+// Export middleware function
 module.exports = (req, res, next) => {
+
     try {
-        // Get token from header: Bearer TOKEN
-        const token = req.headers.authorization.split(" ")[1];
+        // Extract token from Authorization header (Bearer token)
+        const token = req.headers.authorization?.split(" ")[1];
 
-        // Verify token
-        const decoded = jwt.verify(token, "secret");
+        // Check if token is missing
+        if (!token) {
+            // Return unauthorized response if no token is provided
+            return res.status(401).json({
+                success: false,
+                msg: "No token provided - Please login first"
+            });
+        }
 
-        // Attach user data to request
+        // Verify token using secret key and decode payload
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Attach decoded user data to request object
         req.user = decoded;
 
+        // Move to next middleware or route handler
         next();
+
     } catch (err) {
-        return res.status(401).json({ msg: "Unauthorized" });
+        // Handle invalid or expired token errors
+        return res.status(401).json({
+            success: false,
+            msg: "Invalid or expired token - Please login again",
+            error: err.message
+        });
     }
 };

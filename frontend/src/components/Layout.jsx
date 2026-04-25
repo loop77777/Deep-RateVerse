@@ -1,12 +1,15 @@
 import Navbar from "./Navbar";
 
+/**
+ * Layout Component - Wraps pages with navbar
+ */
 export default function Layout({ children }) {
-  return (
-    <div>
-      <Navbar />
-      <div className="p-6 bg-gray-100 min-h-screen">
-        {children}
-      </div>
-    </div>
-  );
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <Navbar />
+            <main className="container mx-auto p-4">
+                {children}
+            </main>
+        </div>
+    );
 }

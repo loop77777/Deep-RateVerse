@@ -42,6 +42,32 @@ exports.addStore = async (req, res) => {
     res.json(store.rows[0]);
 };
 
+// getStores 
+exports.getStores = async (req, res) => {
+    const { search = "", owner_id, sort = "name", order = "asc" } = req.query;
+
+    const allowedSort = ["name", "email", "address"];
+    const allowedOrder = ["asc", "desc"];
+
+    const sortField = allowedSort.includes(sort) ? sort : "name";
+    const sortOrder = allowedOrder.includes(order) ? order : "asc";
+
+    let query = `
+    SELECT id,name,email,address,owner_id
+    FROM stores
+    WHERE name ILIKE $1 OR email ILIKE $1
+  `;
+
+    if (owner_id) query += ` AND owner_id=${owner_id}`;
+
+    query += ` ORDER BY ${sortField} ${sortOrder}`;
+
+    const result = await pool.query(query, [`%${search}%`]);
+
+    res.json(result.rows);
+};
+
+
 // Safe filtering and sorting
 exports.getUsers = async (req, res) => {
     const { search = "", role, sort = "name", order = "asc" } = req.query;
