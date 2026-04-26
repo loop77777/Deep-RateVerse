@@ -1,94 +1,141 @@
+/**
+ * Admin Controller
+ * Handles admin operations
+ */
+
 const pool = require("../config/db");
 const bcrypt = require("bcrypt");
 
-// Admin dashboard
-exports.dashboard = async (req, res) => {
-    const users = await pool.query("SELECT COUNT(*) FROM users");
-    const stores = await pool.query("SELECT COUNT(*) FROM stores");
-    const ratings = await pool.query("SELECT COUNT(*) FROM ratings");
-
-    res.json({
-        users: users.rows[0].count,
-        stores: stores.rows[0].count,
-        ratings: ratings.rows[0].count,
-    });
-};
-
-// Add user (admin, user, owner)
+/**
+ * Add new user (Admin only)
+ */
 exports.addUser = async (req, res) => {
-    const { name, email, password, address, role } = req.body;
+    try {
+        const { name, email, password, address, role } = req.body;
 
-    const hash = await bcrypt.hash(password, 10);
+        // -------- VALIDATION --------
+        if (!name || name.length < 20 || name.length > 60) {
+            return res.status(400).json({ success: false, msg: "Invalid name" });
+        }
 
-    const user = await pool.query(
-        `INSERT INTO users(name,email,password,address,role)
-     VALUES($1,$2,$3,$4,$5) RETURNING id,name,email,role`,
-        [name, email, hash, address, role]
-    );
+        const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+        if (existing.rows.length) {
+            return res.status(400).json({ success: false, msg: "User already exists" });
+        }
 
-    res.json(user.rows[0]);
+        // -------- CREATE USER --------
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await pool.query(
+            `INSERT INTO users(name, email, password, address, role)
+             VALUES($1,$2,$3,$4,$5)
+             RETURNING id, name, email, role, address`,
+            [name, email, hashedPassword, address, role || 'user']
+        );
+
+        res.json({ success: true, msg: "User created", user: user.rows[0] });
+    } catch (err) {
+        console.error("Error:", err);
+        res.status(500).json({ success: false, msg: "Server error" });
+    }
 };
 
-// Add store
+/**
+ * Add new store (Admin only)
+ */
 exports.addStore = async (req, res) => {
-    const { name, email, address, owner_id } = req.body;
+    try {
+        const { name, email, address, owner_id } = req.body;
 
-    const store = await pool.query(
-        `INSERT INTO stores(name,email,address,owner_id)
-     VALUES($1,$2,$3,$4) RETURNING *`,
-        [name, email, address, owner_id]
-    );
+        if (!name || !email || !address) {
+            return res.status(400).json({ success: false, msg: "Missing required fields" });
+        }
 
-    res.json(store.rows[0]);
+        const store = await pool.query(
+            `INSERT INTO stores(name, email, address, owner_id, rating)
+             VALUES($1,$2,$3,$4,0)
+             RETURNING *`,
+            [name, email, address, owner_id]
+        );
+
+        res.json({ success: true, msg: "Store created", store: store.rows[0] });
+    } catch (err) {
+        res.status(500).json({ success: false, msg: "Server error" });
+    }
 };
 
-// getStores 
-exports.getStores = async (req, res) => {
-    const { search = "", owner_id, sort = "name", order = "asc" } = req.query;
-
-    const allowedSort = ["name", "email", "address"];
-    const allowedOrder = ["asc", "desc"];
-
-    const sortField = allowedSort.includes(sort) ? sort : "name";
-    const sortOrder = allowedOrder.includes(order) ? order : "asc";
-
-    let query = `
-    SELECT id,name,email,address,owner_id
-    FROM stores
-    WHERE name ILIKE $1 OR email ILIKE $1
-  `;
-
-    if (owner_id) query += ` AND owner_id=${owner_id}`;
-
-    query += ` ORDER BY ${sortField} ${sortOrder}`;
-
-    const result = await pool.query(query, [`%${search}%`]);
-
-    res.json(result.rows);
-};
-
-
-// Safe filtering and sorting
+/**
+ * Get all users with filters
+ */
 exports.getUsers = async (req, res) => {
-    const { search = "", role, sort = "name", order = "asc" } = req.query;
+    try {
+        const { search, role, sortBy } = req.query;
+        let query = "SELECT id, name, email, address, role FROM users WHERE 1=1";
+        const params = [];
 
-    const allowedSort = ["name", "email", "role"];
-    const allowedOrder = ["asc", "desc"];
+        if (search) {
+            query += ` AND (name ILIKE $${params.length + 1} OR email ILIKE $${params.length + 1})`;
+            params.push(`%${search}%`);
+        }
 
-    const sortField = allowedSort.includes(sort) ? sort : "name";
-    const sortOrder = allowedOrder.includes(order) ? order : "asc";
+        if (role) {
+            query += ` AND role = $${params.length + 1}`;
+            params.push(role);
+        }
 
-    let query = `
-    SELECT id,name,email,address,role
-    FROM users
-    WHERE name ILIKE $1 OR email ILIKE $1
-  `;
+        if (sortBy) {
+            query += ` ORDER BY ${sortBy} ASC`;
+        }
 
-    if (role) query += ` AND role='${role}'`;
+        const users = await pool.query(query, params);
+        res.json({ success: true, data: users.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, msg: "Server error" });
+    }
+};
 
-    query += ` ORDER BY ${sortField} ${sortOrder}`;
+/**
+ * Get all stores with filters
+ */
+exports.getStores = async (req, res) => {
+    try {
+        const { search, sortBy } = req.query;
+        let query = "SELECT * FROM stores WHERE 1=1";
+        const params = [];
 
-    const result = await pool.query(query, [`%${search}%`]);
+        if (search) {
+            query += ` AND (name ILIKE $${params.length + 1} OR address ILIKE $${params.length + 1})`;
+            params.push(`%${search}%`);
+        }
 
-    res.json(result.rows);
+        if (sortBy) {
+            query += ` ORDER BY ${sortBy} ASC`;
+        }
+
+        const stores = await pool.query(query, params);
+        res.json({ success: true, data: stores.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, msg: "Server error" });
+    }
+};
+
+/**
+ * Admin Dashboard stats
+ */
+exports.dashboard = async (req, res) => {
+    try {
+        const totalUsers = await pool.query("SELECT COUNT(*) FROM users");
+        const totalStores = await pool.query("SELECT COUNT(*) FROM stores");
+        const totalRatings = await pool.query("SELECT COUNT(*) FROM ratings");
+
+        res.json({
+            success: true,
+            stats: {
+                users: totalUsers.rows[0].count,
+                stores: totalStores.rows[0].count,
+                ratings: totalRatings.rows[0].count
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, msg: "Server error" });
+    }
 };

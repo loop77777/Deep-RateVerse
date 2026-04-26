@@ -1,58 +1,60 @@
 /**
  * Store Controller
- * Handles store listing and rating logic
+ * Handles store operations
  */
 
 const pool = require("../config/db");
 
 /**
- * Get All Stores
- * - Includes average rating
- * - Includes current user's rating
+ * Get all stores
  */
 exports.getStores = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const stores = await pool.query("SELECT * FROM stores");
 
-    const result = await pool.query(`
-      SELECT 
-        s.id, s.name, s.address,
-        COALESCE(AVG(r.rating),0) AS avg_rating,
-        MAX(CASE WHEN r.user_id = $1 THEN r.rating END) AS user_rating
-      FROM stores s
-      LEFT JOIN ratings r ON s.id = r.store_id
-      GROUP BY s.id
-    `, [userId]);
-
-    res.json(result.rows);
-
+    res.json({
+      success: true,
+      data: stores.rows || []
+    });
   } catch (err) {
-    res.status(500).json({ msg: "Server error" });
+    console.error("Error fetching stores:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Failed to fetch stores"
+    });
   }
 };
 
 /**
- * Add or Update Rating
+ * Rate a store
  */
 exports.rateStore = async (req, res) => {
   try {
-    const { store_id, rating } = req.body;
+    const { storeId, rating } = req.body;
+    const userId = req.user.id;
 
-    // Rating must be between 1 and 5
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ msg: "Rating must be between 1-5" });
+    if (!storeId || !rating || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid store ID or rating"
+      });
     }
 
-    await pool.query(`
-      INSERT INTO ratings(user_id, store_id, rating)
-      VALUES($1,$2,$3)
-      ON CONFLICT (user_id, store_id)
-      DO UPDATE SET rating = EXCLUDED.rating
-    `, [req.user.id, store_id, rating]);
+    // Save rating to database
+    await pool.query(
+      "INSERT INTO ratings(user_id, store_id, rating) VALUES($1, $2, $3)",
+      [userId, storeId, rating]
+    );
 
-    res.json({ msg: "Rating saved" });
-
+    res.json({
+      success: true,
+      msg: "Rating saved successfully"
+    });
   } catch (err) {
-    res.status(500).json({ msg: "Server error" });
+    console.error("Error rating store:", err);
+    res.status(500).json({
+      success: false,
+      msg: "Failed to rate store"
+    });
   }
 };

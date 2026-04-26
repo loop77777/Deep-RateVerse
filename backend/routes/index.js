@@ -11,52 +11,52 @@ let authCtrl, storeCtrl, ownerCtrl, adminCtrl, userCtrl;
 
 try {
     authCtrl = require("../controllers/authController");
-    console.log("✅ authController loaded");
+    console.log("authController loaded");
 } catch (err) {
-    console.error("❌ authController ERROR:", err.message);
+    console.error("authController ERROR:", err.message);
 }
 
 try {
     storeCtrl = require("../controllers/storeController");
-    console.log("✅ storeController loaded");
+    console.log("storeController loaded");
 } catch (err) {
-    console.error("❌ storeController ERROR:", err.message);
+    console.error("storeController ERROR:", err.message);
 }
 
 try {
     ownerCtrl = require("../controllers/ownerController");
-    console.log("✅ ownerController loaded");
+    console.log("ownerController loaded");
 } catch (err) {
-    console.error("❌ ownerController ERROR:", err.message);
+    console.error("ownerController ERROR:", err.message);
 }
 
 try {
     adminCtrl = require("../controllers/adminController");
-    console.log("✅ adminController loaded");
+    console.log("adminController loaded");
 } catch (err) {
-    console.error("❌ adminController ERROR:", err.message);
+    console.error("adminController ERROR:", err.message);
 }
 
 try {
     userCtrl = require("../controllers/userController");
-    console.log("✅ userController loaded");
+    console.log("userController loaded");
 } catch (err) {
-    console.error("❌ userController ERROR:", err.message);
+    console.error("userController ERROR:", err.message);
 }
 
 // -------- DEBUG: Verify all exports --------
-console.log("\n📋 Checking Exports:");
-console.log("authCtrl.signup:", typeof authCtrl?.signup, authCtrl?.signup ? "✅" : "❌");
-console.log("authCtrl.login:", typeof authCtrl?.login, authCtrl?.login ? "✅" : "❌");
-console.log("storeCtrl.getStores:", typeof storeCtrl?.getStores, storeCtrl?.getStores ? "✅" : "❌");
-console.log("storeCtrl.rateStore:", typeof storeCtrl?.rateStore, storeCtrl?.rateStore ? "✅" : "❌");
-console.log("adminCtrl.addUser:", typeof adminCtrl?.addUser, adminCtrl?.addUser ? "✅" : "❌");
-console.log("adminCtrl.addStore:", typeof adminCtrl?.addStore, adminCtrl?.addStore ? "✅" : "❌");
-console.log("adminCtrl.getUsers:", typeof adminCtrl?.getUsers, adminCtrl?.getUsers ? "✅" : "❌");
-console.log("adminCtrl.getStores:", typeof adminCtrl?.getStores, adminCtrl?.getStores ? "✅" : "❌");
-console.log("adminCtrl.dashboard:", typeof adminCtrl?.dashboard, adminCtrl?.dashboard ? "✅" : "❌");
-console.log("ownerCtrl.dashboard:", typeof ownerCtrl?.dashboard, ownerCtrl?.dashboard ? "✅" : "❌");
-console.log("userCtrl.updatePassword:", typeof userCtrl?.updatePassword, userCtrl?.updatePassword ? "✅" : "❌");
+console.log("\nChecking Exports:");
+console.log("authCtrl.signup:", typeof authCtrl?.signup, authCtrl?.signup ? "OK" : "MISSING");
+console.log("authCtrl.login:", typeof authCtrl?.login, authCtrl?.login ? "OK" : "MISSING");
+console.log("storeCtrl.getStores:", typeof storeCtrl?.getStores, storeCtrl?.getStores ? "OK" : "MISSING");
+console.log("storeCtrl.rateStore:", typeof storeCtrl?.rateStore, storeCtrl?.rateStore ? "OK" : "MISSING");
+console.log("adminCtrl.addUser:", typeof adminCtrl?.addUser, adminCtrl?.addUser ? "OK" : "MISSING");
+console.log("adminCtrl.addStore:", typeof adminCtrl?.addStore, adminCtrl?.addStore ? "OK" : "MISSING");
+console.log("adminCtrl.getUsers:", typeof adminCtrl?.getUsers, adminCtrl?.getUsers ? "OK" : "MISSING");
+console.log("adminCtrl.getStores:", typeof adminCtrl?.getStores, adminCtrl?.getStores ? "OK" : "MISSING");
+console.log("adminCtrl.dashboard:", typeof adminCtrl?.dashboard, adminCtrl?.dashboard ? "OK" : "MISSING");
+console.log("ownerCtrl.dashboard:", typeof ownerCtrl?.dashboard, ownerCtrl?.dashboard ? "OK" : "MISSING");
+console.log("userCtrl.updatePassword:", typeof userCtrl?.updatePassword, userCtrl?.updatePassword ? "OK" : "MISSING");
 console.log();
 
 // -------- AUTH ROUTES --------

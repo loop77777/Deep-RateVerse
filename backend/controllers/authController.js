@@ -9,14 +9,13 @@ const jwt = require("jsonwebtoken");
 
 // -------- VERIFY JWT_SECRET EXISTS --------
 if (!process.env.JWT_SECRET) {
-    console.error("❌ CRITICAL ERROR: JWT_SECRET not found in .env file!");
+    console.error("CRITICAL ERROR: JWT_SECRET not found in .env file!");
     console.error("Please add JWT_SECRET to your .env file");
     process.exit(1);
 }
 
 /**
  * User Signup
- * 
  * Validates input, checks if user exists, hashes password, and creates user
  */
 exports.signup = async (req, res) => {
@@ -25,33 +24,33 @@ exports.signup = async (req, res) => {
 
         // -------- VALIDATION: Name --------
         if (!name || name.length < 20 || name.length > 60) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                msg: "Name must be 20-60 characters" 
+                msg: "Name must be 20-60 characters"
             });
         }
 
         // -------- VALIDATION: Email --------
         if (!email || !email.includes("@")) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                msg: "Invalid email" 
+                msg: "Invalid email"
             });
         }
 
         // -------- VALIDATION: Address --------
         if (!address || address.length > 400) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                msg: "Invalid address" 
+                msg: "Invalid address"
             });
         }
 
         // -------- VALIDATION: Password --------
         if (!/^(?=.*[A-Z])(?=.*[\W_]).{8,16}$/.test(password)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                msg: "Password must have uppercase + special char (8-16 chars)" 
+                msg: "Password must have uppercase + special char (8-16 chars)"
             });
         }
 
@@ -62,9 +61,9 @@ exports.signup = async (req, res) => {
         );
 
         if (existing.rows.length) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                msg: "User already exists" 
+                msg: "User already exists"
             });
         }
 
@@ -80,17 +79,17 @@ exports.signup = async (req, res) => {
         );
 
         // -------- RETURN SUCCESS --------
-        res.status(201).json({ 
+        res.status(201).json({
             success: true,
             msg: "User created successfully",
             user: user.rows[0]
         });
 
     } catch (err) {
-        console.error("❌ Signup Error:", err);
-        res.status(500).json({ 
+        console.error("Signup Error:", err);
+        res.status(500).json({
             success: false,
-            msg: "Server error" 
+            msg: "Server error"
         });
     }
 };
@@ -103,11 +102,11 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // -------- VALIDATION --------
+        // -------- VALIDATION: Email & Password --------
         if (!email || !password) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                msg: "Email and password required" 
+                msg: "Email and password required"
             });
         }
 
@@ -118,9 +117,9 @@ exports.login = async (req, res) => {
         );
 
         if (!user.rows.length) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                msg: "User not found" 
+                msg: "User not found"
             });
         }
 
@@ -131,15 +130,15 @@ exports.login = async (req, res) => {
         );
 
         if (!isValid) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                msg: "Incorrect password" 
+                msg: "Incorrect password"
             });
         }
 
         // -------- GENERATE JWT TOKEN --------
-        console.log("🔑 JWT_SECRET exists:", !!process.env.JWT_SECRET);
-        
+        console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET);
+
         const token = jwt.sign(
             {
                 id: user.rows[0].id,
@@ -150,8 +149,8 @@ exports.login = async (req, res) => {
             { expiresIn: "7d" }
         );
 
-        // -------- RETURN SUCCESS --------
-        res.status(200).json({ 
+        // -------- RETURN SUCCESS WITH TOKEN & USER --------
+        res.status(200).json({
             success: true,
             msg: "Login successful",
             token: token,
@@ -164,10 +163,10 @@ exports.login = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("❌ Login Error:", err);
-        res.status(500).json({ 
+        console.error("Login Error:", err);
+        res.status(500).json({
             success: false,
-            msg: "Server error" 
+            msg: "Server error"
         });
     }
 };

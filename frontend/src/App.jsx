@@ -12,11 +12,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* -------- PUBLIC ROUTES -------- */}
+        {/* -------- PUBLIC ROUTES (No Layout) -------- */}
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* -------- USER ROUTES -------- */}
+        {/* -------- USER ROUTES (With Layout) -------- */}
         <Route path="/stores" element={
           <ProtectedRoute roles={["user", "admin", "owner"]}>
             <Layout>
@@ -25,7 +25,7 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* -------- ADMIN ROUTES -------- */}
+        {/* -------- ADMIN ROUTES (With Layout) -------- */}
         <Route path="/admin" element={
           <ProtectedRoute roles={["admin"]}>
             <Layout>
@@ -34,7 +34,7 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* -------- OWNER ROUTES -------- */}
+        {/* -------- OWNER ROUTES (With Layout) -------- */}
         <Route path="/owner" element={
           <ProtectedRoute roles={["owner"]}>
             <Layout>

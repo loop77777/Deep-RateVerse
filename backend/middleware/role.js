@@ -9,14 +9,14 @@ module.exports = (allowedRoles) => {
             if (!userRole) {
                 return res.status(401).json({
                     success: false,
-                    message: "User not authenticated"
+                    msg: "User not authenticated"
                 });
             }
 
             if (!allowedRoles.includes(userRole)) {
                 return res.status(403).json({
                     success: false,
-                    message: `Access denied. Required role: ${allowedRoles.join(", ")}`
+                    msg: `Access denied. Required role: ${allowedRoles.join(", ")}`
                 });
             }
 
@@ -24,7 +24,7 @@ module.exports = (allowedRoles) => {
         } catch (error) {
             res.status(500).json({
                 success: false,
-                message: error.message
+                msg: error.message
             });
         }
     };

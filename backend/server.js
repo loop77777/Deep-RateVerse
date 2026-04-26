@@ -39,7 +39,7 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
     res.json({
         success: true,
-        message: "🚀 Roxiler Backend API Server",
+        message: "RateVerse Backend API Server",
         version: "1.0.0",
         apiBase: "http://localhost:5000/api"
     });
@@ -49,8 +49,30 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) => {
     res.json({
         success: true,
-        message: "✅ Server is running"
+        message: "Server is running"
     });
+});
+
+// -------- API ROOT ROUTE --------
+app.get("/api", (req, res) => {
+    res.json({
+        success: true,
+        message: "RateVerse API",
+        version: "1.0.0",
+        endpoints: {
+            auth: "/api/auth/login, /api/auth/signup",
+            stores: "/api/stores",
+            admin: "/api/admin/...",
+            owner: "/api/owner/..."
+        }
+    });
+});
+
+// -------- REQUEST LOGGING MIDDLEWARE --------
+app.use((req, res, next) => {
+    const timestamp = new Date().toLocaleTimeString();
+    console.log(`[${timestamp}] ${req.method} ${req.path}`);
+    next();
 });
 
 // -------- ROUTES --------
@@ -67,7 +89,7 @@ app.use((req, res) => {
 
 // -------- ERROR HANDLING MIDDLEWARE --------
 app.use((err, req, res, next) => {
-    console.error("❌ Server Error:", err.message);
+    console.error("Error:", err.message);
     res.status(err.status || 500).json({
         success: false,
         message: err.message || "Internal Server Error"
@@ -78,13 +100,13 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-    console.log(`\n✅ Server running on http://localhost:${PORT}`);
-    console.log(`📡 API base URL: http://localhost:${PORT}/api`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/api/health\n`);
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`API base URL: http://localhost:${PORT}/api`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
 
 server.on("error", (err) => {
-    console.error("❌ Server failed to start:", err.message);
+    console.error("Server failed to start:", err.message);
     process.exit(1);
 });
 

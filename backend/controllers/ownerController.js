@@ -1,55 +1,53 @@
 /**
- * Store Owner Controller
- * - Shows average rating of owner's stores
- * - Shows users who rated those stores
+ * Owner Controller
+ * Handles store owner operations
  */
 
 const pool = require("../config/db");
 
+/**
+ * Owner Dashboard - View ratings for their store
+ */
 exports.dashboard = async (req, res) => {
   try {
     const ownerId = req.user.id;
 
-    // Get all store IDs owned by this owner
-    const stores = await pool.query(
-      "SELECT id FROM stores WHERE owner_id = $1",
+    // -------- GET OWNER'S STORE --------
+    const store = await pool.query(
+      "SELECT * FROM stores WHERE owner_id = $1",
       [ownerId]
     );
 
-    const storeIds = stores.rows.map(s => s.id);
-
-    // If no stores → return empty data
-    if (storeIds.length === 0) {
-      return res.json({
-        avg_rating: 0,
-        users: []
-      });
+    if (!store.rows.length) {
+      return res.json({ success: true, msg: "No store found", ratings: [] });
     }
 
-    // Calculate average rating
-    const avg = await pool.query(
-      `SELECT COALESCE(AVG(rating),0) AS avg
-       FROM ratings
-       WHERE store_id = ANY($1::int[])`,
-      [storeIds]
+    const storeId = store.rows[0].id;
+
+    // -------- GET RATINGS FOR THIS STORE --------
+    const ratings = await pool.query(
+      `SELECT r.*, u.name, u.email
+             FROM ratings r
+             JOIN users u ON r.user_id = u.id
+             WHERE r.store_id = $1
+             ORDER BY r.created_at DESC`,
+      [storeId]
     );
 
-    // Get users who rated these stores
-    const users = await pool.query(`
-      SELECT u.name, u.email, r.rating, s.name AS store_name
-      FROM ratings r
-      JOIN users u ON u.id = r.user_id
-      JOIN stores s ON s.id = r.store_id
-      WHERE r.store_id = ANY($1::int[])
-    `, [storeIds]);
+    // -------- CALCULATE AVERAGE RATING --------
+    const avgRating = await pool.query(
+      "SELECT AVG(rating) as avg FROM ratings WHERE store_id = $1",
+      [storeId]
+    );
 
     res.json({
-      avg_rating: avg.rows[0].avg,
-      users: users.rows
+      success: true,
+      store: store.rows[0],
+      averageRating: avgRating.rows[0].avg || 0,
+      ratings: ratings.rows
     });
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    console.error("Error:", err);
+    res.status(500).json({ success: false, msg: "Server error" });
   }
 };
