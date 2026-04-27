@@ -1,13 +1,10 @@
-import Navbar from "./Navbar";
-
 /**
- * Layout Component - Wraps pages with navbar
+ * Layout Component - Wraps pages with main content area
  */
 export default function Layout({ children }) {
     return (
-        <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <main className="container mx-auto p-4">
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <main className="container mx-auto px-4 py-8 max-w-7xl">
                 {children}
             </main>
         </div>

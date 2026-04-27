@@ -1,141 +1,207 @@
-/**
- * Admin Controller
- * Handles admin operations
- */
+const db = require('../config/db');
+const crypto = require('crypto');
 
-const pool = require("../config/db");
-const bcrypt = require("bcrypt");
+// Get dashboard
+exports.getDashboard = async (req, res) => {
+    try {
+        console.log("Fetching admin dashboard...");
 
-/**
- * Add new user (Admin only)
- */
-exports.addUser = async (req, res) => {
+        const usersResult = await db.query(`SELECT COUNT(*) as count FROM users`);
+        const storesResult = await db.query(`SELECT COUNT(*) as count FROM stores`);
+        const ratingsResult = await db.query(`SELECT COUNT(*) as count FROM ratings`);
+
+        return res.json({
+            success: true,
+            data: {
+                total_users: parseInt(usersResult.rows[0].count) || 0,
+                total_stores: parseInt(storesResult.rows[0].count) || 0,
+                total_ratings: parseInt(ratingsResult.rows[0].count) || 0
+            },
+            msg: "Dashboard fetched successfully"
+        });
+    } catch (err) {
+        console.error("Error fetching dashboard:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error fetching dashboard",
+            error: err.message
+        });
+    }
+};
+
+// Create store
+exports.createStore = async (req, res) => {
+    try {
+        const { name, email, address } = req.body;
+
+        console.log("Creating store:", { name, email });
+
+        if (!name || !email || !address) {
+            return res.status(400).json({
+                success: false,
+                msg: "All fields required"
+            });
+        }
+
+        const insertQuery = `INSERT INTO stores (name, email, address) VALUES ($1, $2, $3) RETURNING id`;
+        const result = await db.query(insertQuery, [name, email, address]);
+
+        return res.json({
+            success: true,
+            data: { id: result.rows[0].id },
+            msg: "Store created successfully"
+        });
+    } catch (err) {
+        console.error("Error creating store:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error creating store",
+            error: err.message
+        });
+    }
+};
+
+// Create user
+exports.createUser = async (req, res) => {
     try {
         const { name, email, password, address, role } = req.body;
 
-        // -------- VALIDATION --------
-        if (!name || name.length < 20 || name.length > 60) {
-            return res.status(400).json({ success: false, msg: "Invalid name" });
+        console.log("Creating user:", { name, email, role });
+
+        if (!name || !email || !password || !address || !role) {
+            return res.status(400).json({
+                success: false,
+                msg: "All fields required"
+            });
         }
 
-        const existing = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-        if (existing.rows.length) {
-            return res.status(400).json({ success: false, msg: "User already exists" });
-        }
+        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
 
-        // -------- CREATE USER --------
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await pool.query(
-            `INSERT INTO users(name, email, password, address, role)
-             VALUES($1,$2,$3,$4,$5)
-             RETURNING id, name, email, role, address`,
-            [name, email, hashedPassword, address, role || 'user']
-        );
+        const insertQuery = `INSERT INTO users (name, email, password, address, role) VALUES ($1, $2, $3, $4, $5) RETURNING id`;
+        const result = await db.query(insertQuery, [name, email, hashedPassword, address, role]);
 
-        res.json({ success: true, msg: "User created", user: user.rows[0] });
-    } catch (err) {
-        console.error("Error:", err);
-        res.status(500).json({ success: false, msg: "Server error" });
-    }
-};
-
-/**
- * Add new store (Admin only)
- */
-exports.addStore = async (req, res) => {
-    try {
-        const { name, email, address, owner_id } = req.body;
-
-        if (!name || !email || !address) {
-            return res.status(400).json({ success: false, msg: "Missing required fields" });
-        }
-
-        const store = await pool.query(
-            `INSERT INTO stores(name, email, address, owner_id, rating)
-             VALUES($1,$2,$3,$4,0)
-             RETURNING *`,
-            [name, email, address, owner_id]
-        );
-
-        res.json({ success: true, msg: "Store created", store: store.rows[0] });
-    } catch (err) {
-        res.status(500).json({ success: false, msg: "Server error" });
-    }
-};
-
-/**
- * Get all users with filters
- */
-exports.getUsers = async (req, res) => {
-    try {
-        const { search, role, sortBy } = req.query;
-        let query = "SELECT id, name, email, address, role FROM users WHERE 1=1";
-        const params = [];
-
-        if (search) {
-            query += ` AND (name ILIKE $${params.length + 1} OR email ILIKE $${params.length + 1})`;
-            params.push(`%${search}%`);
-        }
-
-        if (role) {
-            query += ` AND role = $${params.length + 1}`;
-            params.push(role);
-        }
-
-        if (sortBy) {
-            query += ` ORDER BY ${sortBy} ASC`;
-        }
-
-        const users = await pool.query(query, params);
-        res.json({ success: true, data: users.rows });
-    } catch (err) {
-        res.status(500).json({ success: false, msg: "Server error" });
-    }
-};
-
-/**
- * Get all stores with filters
- */
-exports.getStores = async (req, res) => {
-    try {
-        const { search, sortBy } = req.query;
-        let query = "SELECT * FROM stores WHERE 1=1";
-        const params = [];
-
-        if (search) {
-            query += ` AND (name ILIKE $${params.length + 1} OR address ILIKE $${params.length + 1})`;
-            params.push(`%${search}%`);
-        }
-
-        if (sortBy) {
-            query += ` ORDER BY ${sortBy} ASC`;
-        }
-
-        const stores = await pool.query(query, params);
-        res.json({ success: true, data: stores.rows });
-    } catch (err) {
-        res.status(500).json({ success: false, msg: "Server error" });
-    }
-};
-
-/**
- * Admin Dashboard stats
- */
-exports.dashboard = async (req, res) => {
-    try {
-        const totalUsers = await pool.query("SELECT COUNT(*) FROM users");
-        const totalStores = await pool.query("SELECT COUNT(*) FROM stores");
-        const totalRatings = await pool.query("SELECT COUNT(*) FROM ratings");
-
-        res.json({
+        return res.json({
             success: true,
-            stats: {
-                users: totalUsers.rows[0].count,
-                stores: totalStores.rows[0].count,
-                ratings: totalRatings.rows[0].count
-            }
+            data: { id: result.rows[0].id },
+            msg: "User created successfully"
         });
     } catch (err) {
-        res.status(500).json({ success: false, msg: "Server error" });
+        console.error("Error creating user:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error creating user",
+            error: err.message
+        });
+    }
+};
+
+// Get all users
+exports.getAllUsers = async (req, res) => {
+    try {
+        console.log("Fetching all users...");
+
+        const query = `SELECT id, name, email, address, role FROM users`;
+        const result = await db.query(query);
+
+        return res.json({
+            success: true,
+            data: result.rows,
+            msg: "Users fetched successfully"
+        });
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error fetching users",
+            error: err.message
+        });
+    }
+};
+
+// Search users
+exports.searchUsers = async (req, res) => {
+    try {
+        const { q } = req.query;
+
+        if (!q) {
+            return res.status(400).json({
+                success: false,
+                msg: "Search query required"
+            });
+        }
+
+        console.log("Searching users:", q);
+
+        const query = `SELECT id, name, email, address, role FROM users WHERE name ILIKE $1 OR email ILIKE $1`;
+        const result = await db.query(query, [`%${q}%`]);
+
+        return res.json({
+            success: true,
+            data: result.rows,
+            msg: "Search completed"
+        });
+    } catch (err) {
+        console.error("Error searching users:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error searching users",
+            error: err.message
+        });
+    }
+};
+
+// Delete user
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        console.log("Deleting user:", id);
+
+        const deleteQuery = `DELETE FROM users WHERE id = $1`;
+        await db.query(deleteQuery, [id]);
+
+        return res.json({
+            success: true,
+            msg: "User deleted successfully"
+        });
+    } catch (err) {
+        console.error("Error deleting user:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error deleting user",
+            error: err.message
+        });
+    }
+};
+
+// Update user
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, address, role } = req.body;
+
+        console.log("Updating user:", id);
+
+        if (!name || !email || !address || !role) {
+            return res.status(400).json({
+                success: false,
+                msg: "All fields required"
+            });
+        }
+
+        const updateQuery = `UPDATE users SET name = $1, email = $2, address = $3, role = $4 WHERE id = $5`;
+        await db.query(updateQuery, [name, email, address, role, id]);
+
+        return res.json({
+            success: true,
+            msg: "User updated successfully"
+        });
+    } catch (err) {
+        console.error("Error updating user:", err);
+        return res.status(500).json({
+            success: false,
+            msg: "Error updating user",
+            error: err.message
+        });
     }
 };

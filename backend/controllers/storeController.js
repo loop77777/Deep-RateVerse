@@ -1,60 +1,135 @@
-/**
- * Store Controller
- * Handles store operations
- */
+const db = require('../config/db');
 
-const pool = require("../config/db");
-
-/**
- * Get all stores
- */
-exports.getStores = async (req, res) => {
+// Get all stores
+exports.getAllStores = async (req, res) => {
   try {
-    const stores = await pool.query("SELECT * FROM stores");
+    console.log("Fetching all stores...");
 
-    res.json({
+    const query = `
+            SELECT 
+                s.id,
+                s.name,
+                s.email,
+                s.address,
+                COALESCE(AVG(r.rating), 0) as average_rating,
+                COUNT(r.id) as total_ratings
+            FROM stores s
+            LEFT JOIN ratings r ON s.id = r.store_id
+            GROUP BY s.id, s.name, s.email, s.address
+            ORDER BY s.name ASC
+        `;
+
+    const result = await db.query(query);
+    console.log("Stores fetched:", result.rows.length);
+
+    return res.json({
       success: true,
-      data: stores.rows || []
+      data: result.rows,
+      msg: "Stores fetched successfully"
     });
   } catch (err) {
     console.error("Error fetching stores:", err);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      msg: "Failed to fetch stores"
+      msg: "Error fetching stores",
+      error: err.message
     });
   }
 };
 
-/**
- * Rate a store
- */
-exports.rateStore = async (req, res) => {
+// Search stores
+exports.searchStores = async (req, res) => {
   try {
-    const { storeId, rating } = req.body;
-    const userId = req.user.id;
+    const { q } = req.query;
 
-    if (!storeId || !rating || rating < 1 || rating > 5) {
+    if (!q) {
       return res.status(400).json({
         success: false,
-        msg: "Invalid store ID or rating"
+        msg: "Search query required"
       });
     }
 
-    // Save rating to database
-    await pool.query(
-      "INSERT INTO ratings(user_id, store_id, rating) VALUES($1, $2, $3)",
-      [userId, storeId, rating]
-    );
+    console.log("Searching stores with query:", q);
 
-    res.json({
+    const query = `
+            SELECT 
+                s.id,
+                s.name,
+                s.email,
+                s.address,
+                COALESCE(AVG(r.rating), 0) as average_rating,
+                COUNT(r.id) as total_ratings
+            FROM stores s
+            LEFT JOIN ratings r ON s.id = r.store_id
+            WHERE s.name ILIKE $1 OR s.address ILIKE $1
+            GROUP BY s.id, s.name, s.email, s.address
+            ORDER BY s.name ASC
+        `;
+
+    const result = await db.query(query, [`%${q}%`]);
+    console.log("Search results:", result.rows.length);
+
+    return res.json({
       success: true,
-      msg: "Rating saved successfully"
+      data: result.rows,
+      msg: "Search completed"
     });
   } catch (err) {
-    console.error("Error rating store:", err);
-    res.status(500).json({
+    console.error("Error searching stores:", err);
+    return res.status(500).json({
       success: false,
-      msg: "Failed to rate store"
+      msg: "Error searching stores",
+      error: err.message
+    });
+  }
+};
+
+// Get store by ID
+exports.getStoreById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Valid store ID required"
+      });
+    }
+
+    const query = `
+            SELECT 
+                s.id,
+                s.name,
+                s.email,
+                s.address,
+                COALESCE(AVG(r.rating), 0) as average_rating,
+                COUNT(r.id) as total_ratings
+            FROM stores s
+            LEFT JOIN ratings r ON s.id = r.store_id
+            WHERE s.id = $1
+            GROUP BY s.id, s.name, s.email, s.address
+        `;
+
+    const result = await db.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        msg: "Store not found"
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: result.rows[0],
+      msg: "Store fetched successfully"
+    });
+  } catch (err) {
+    console.error("Error fetching store:", err);
+    return res.status(500).json({
+      success: false,
+      msg: "Error fetching store",
+      error: err.message
     });
   }
 };

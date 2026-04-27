@@ -1,10 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import './index.css'
+import { SnackbarProvider } from 'notistack'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <SnackbarProvider 
+      maxSnack={3} 
+      preventDuplicate
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      autoHideDuration={3000}
+    >
+      <App />
+    </SnackbarProvider>
+  </React.StrictMode>,
 )

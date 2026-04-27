@@ -33,14 +33,18 @@ api.interceptors.response.use(
     (error) => {
         console.error("❌ API Error:", error.response?.data || error.message);
 
-        // If 401, token expired - logout
-        if (error.response?.status === 401) {
+        const isAuthRequest = ["/auth/login", "/auth/signup"].includes(error.config?.url);
+
+        // If a protected request gets 401, token expired - logout.
+        // Login/signup 401s should stay on the page so the form can show the error.
+        if (error.response?.status === 401 && !isAuthRequest) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             window.location.href = "/";
         }
 
-        return Promise.reject(error.response?.data || error);
+        // Return error but don't throw - let components handle it
+        return error.response?.data || { success: false, msg: error.message };
     }
 );
 
