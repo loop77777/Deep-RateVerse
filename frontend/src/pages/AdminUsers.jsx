@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../utils/api";
 import Layout from "../components/Layout";
 import { useSnackbar } from 'notistack';
@@ -21,11 +21,7 @@ export default function AdminUsers() {
     const [submitting, setSubmitting] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
-
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         try {
             setLoading(true);
             const response = await api.get("/admin/users");
@@ -35,12 +31,16 @@ export default function AdminUsers() {
             } else {
                 enqueueSnackbar(response.msg || "Failed to load users", { variant: 'error' });
             }
-        } catch (err) {
+        } catch {
             enqueueSnackbar("Error loading users", { variant: 'error' });
         } finally {
             setLoading(false);
         }
-    };
+    }, [enqueueSnackbar]);
+
+    useEffect(() => {
+        loadUsers();
+    }, [loadUsers]);
 
     const handleSearch = async (e) => {
         const query = e.target.value;
@@ -56,7 +56,7 @@ export default function AdminUsers() {
             if (response.success) {
                 setUsers(response.data || []);
             }
-        } catch (err) {
+        } catch {
             enqueueSnackbar("Search failed", { variant: 'error' });
         }
     };
@@ -112,7 +112,7 @@ export default function AdminUsers() {
                 } else {
                     enqueueSnackbar(response.msg || "Failed to delete user", { variant: 'error' });
                 }
-            } catch (err) {
+            } catch {
                 enqueueSnackbar("Error deleting user", { variant: 'error' });
             }
         }

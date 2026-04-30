@@ -52,9 +52,11 @@ backend/node_modules/
 # ===============================
 # PostgreSQL / DB (local files)
 # ===============================
-*.sql
 *.sqlite
 *.db
+
+# Keep database schema/seed files committed for deployment setup.
+!backend/config/*.sql
 
 # ===============================
 # Coverage / Testing

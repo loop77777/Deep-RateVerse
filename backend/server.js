@@ -11,12 +11,23 @@ const cors = require("cors");
 const app = express();
 
 // -------- CORS CONFIGURATION --------
+const normalizeOrigin = (origin) => origin?.replace(/\/+$/, "");
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    process.env.FRONTEND_URL
+].filter(Boolean).map(normalizeOrigin);
+
 const corsOptions = {
-    origin: [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173"
-    ],
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
+            return callback(null, true);
+        }
+
+        return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -27,21 +38,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// -------- SECURITY HEADERS --------
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    next();
-});
-
 // -------- ROOT ROUTE --------
 app.get("/", (req, res) => {
     res.json({
         success: true,
         message: "RateVerse Backend API Server",
         version: "1.0.0",
-        apiBase: "http://localhost:5000/api"
+        apiBase: "/api"
     });
 });
 
@@ -61,7 +64,7 @@ app.get("/api", (req, res) => {
         version: "1.0.0",
         endpoints: {
             auth: "/api/auth/login, /api/auth/signup",
-            stores: "/api/stores",
+            stores: "/api/store/all, /api/store/search",
             admin: "/api/admin/...",
             owner: "/api/owner/..."
         }
@@ -99,15 +102,17 @@ app.use((err, req, res, next) => {
 // -------- START SERVER --------
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`API base URL: http://localhost:${PORT}/api`);
-    console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
+if (require.main === module) {
+    const server = app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(`API base URL: http://localhost:${PORT}/api`);
+        console.log(`Health check: http://localhost:${PORT}/api/health`);
+    });
 
-server.on("error", (err) => {
-    console.error("Server failed to start:", err.message);
-    process.exit(1);
-});
+    server.on("error", (err) => {
+        console.error("Server failed to start:", err.message);
+        process.exit(1);
+    });
+}
 
 module.exports = app;

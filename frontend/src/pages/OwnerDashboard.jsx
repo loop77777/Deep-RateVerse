@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import api from "../utils/api";
 
@@ -13,11 +13,7 @@ export default function OwnerDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        loadDashboard();
-    }, []);
-
-    const loadDashboard = async () => {
+    const loadDashboard = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get("/owner/dashboard");
@@ -34,7 +30,11 @@ export default function OwnerDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadDashboard();
+    }, [loadDashboard]);
 
     if (loading) {
         return (

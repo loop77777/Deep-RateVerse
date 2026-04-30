@@ -1,15 +1,21 @@
-// Import Pool from pg (PostgreSQL client)
 const { Pool } = require("pg");
 require("dotenv").config();
 
-// Create connection pool to PostgreSQL
-const pool = new Pool({
-    user: process.env.DB_USER || "postgres",
-    host: process.env.DB_HOST || "localhost",
-    database: process.env.DB_NAME || "store_rating",
-    password: process.env.DB_PASSWORD || "postgres12pass",
-    port: Number(process.env.DB_PORT) || 5432,
-});
+const isProduction = process.env.NODE_ENV === "production";
 
-// Export pool to use in controllers
+const connectionConfig = process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: isProduction ? { rejectUnauthorized: false } : false,
+    }
+    : {
+        user: process.env.DB_USER || "postgres",
+        host: process.env.DB_HOST || "localhost",
+        database: process.env.DB_NAME || "store_rating",
+        password: process.env.DB_PASSWORD || "postgres12pass",
+        port: Number(process.env.DB_PORT) || 5432,
+    };
+
+const pool = new Pool(connectionConfig);
+
 module.exports = pool;

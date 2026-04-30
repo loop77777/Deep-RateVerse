@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../utils/api";
 import Layout from "../components/Layout";
 import { useSnackbar } from 'notistack';
@@ -17,11 +17,7 @@ export default function AdminDashboard() {
     const { enqueueSnackbar } = useSnackbar();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        loadDashboard();
-    }, []);
-
-    const loadDashboard = async () => {
+    const loadDashboard = useCallback(async () => {
         try {
             setLoading(true);
             console.log("Loading admin dashboard...");
@@ -44,7 +40,11 @@ export default function AdminDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [enqueueSnackbar]);
+
+    useEffect(() => {
+        loadDashboard();
+    }, [loadDashboard]);
 
     if (loading) {
         return (

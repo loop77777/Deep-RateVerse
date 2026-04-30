@@ -1,6 +1,5 @@
 // filepath: c:\Users\ASUS\Documents\deep assignments\roxiler system assignment\frontend\src\pages\Settings.jsx
 import { getUser } from "../utils/auth";
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../utils/api";
 import Layout from "../components/Layout";
@@ -12,7 +11,6 @@ import { useSnackbar } from 'notistack';
  */
 export default function Settings() {
     const user = getUser();
-    const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [passwords, setPasswords] = useState({

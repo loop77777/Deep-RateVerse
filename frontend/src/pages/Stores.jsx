@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../utils/api";
 import { useSnackbar } from 'notistack';
 import Layout from "../components/Layout";
@@ -16,11 +16,22 @@ export default function Stores() {
     const [userRatings, setUserRatings] = useState({});
     const { enqueueSnackbar } = useSnackbar();
 
-    useEffect(() => {
-        loadStores();
+    const loadUserRating = useCallback(async (storeId) => {
+        try {
+            const response = await api.get(`/rating/user/${storeId}`);
+            if (response.success && response.data) {
+                setUserRatings(prev => ({
+                    ...prev,
+                    [storeId]: response.data
+                }));
+            }
+        } catch {
+            // User hasn't rated this store yet - this is normal
+            console.log(`No rating found for store ${storeId}`);
+        }
     }, []);
 
-    const loadStores = async () => {
+    const loadStores = useCallback(async () => {
         try {
             setLoading(true);
             console.log("Loading stores...");
@@ -46,22 +57,11 @@ export default function Stores() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [enqueueSnackbar, loadUserRating]);
 
-    const loadUserRating = async (storeId) => {
-        try {
-            const response = await api.get(`/rating/user/${storeId}`);
-            if (response.success && response.data) {
-                setUserRatings(prev => ({
-                    ...prev,
-                    [storeId]: response.data
-                }));
-            }
-        } catch (err) {
-            // User hasn't rated this store yet - this is normal
-            console.log(`No rating found for store ${storeId}`);
-        }
-    };
+    useEffect(() => {
+        loadStores();
+    }, [loadStores]);
 
     const handleSearch = async (e) => {
         const query = e.target.value;
